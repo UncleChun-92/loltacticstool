@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Tactics Tool - 英雄联盟云顶之弈策略助手</title>
+    <meta name="description" content="专业的英雄联盟(League of Legends)和云顶之弈(Teamfight Tactics)策略工具，提供实时数据分析和阵容推荐">
+    <link rel="canonical" href="https://loltacticstool.online" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://loltacticstool.online/">
+    <meta property="og:title" content="LoL Tactics Tool - 英雄联盟云顶之弈策略助手">
+    <meta property="og:description" content="专业的英雄联盟(League of Legends)和云顶之弈(Teamfight Tactics)策略工具，提供实时数据分析和阵容推荐">
+    <meta property="og:image" content="https://loltacticstool.online/images/social-preview.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://loltacticstool.online/">
+    <meta property="twitter:title" content="LoL Tactics Tool - 英雄联盟云顶之弈策略助手">
+    <meta property="twitter:description" content="专业的英雄联盟(League of Legends)和云顶之弈(Teamfight Tactics)策略工具，提供实时数据分析和阵容推荐">
+    <meta property="twitter:image" content="https://loltacticstool.online/images/social-preview.jpg">
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "LoL Tactics Tool",
+      "url": "https://loltacticstool.online",
+      "description": "专业的英雄联盟(League of Legends)和云顶之弈(Teamfight Tactics)策略工具",
+      "applicationCategory": "Game",
+      "operatingSystem": "Web Browser"
+    }
+    </script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'apple-blue': '#0071e3',
+                        'apple-gray': '#f5f5f7',
+                        'apple-dark': '#1d1d1f',
+                        'apple-light': '#fbfbfd'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 多语言支持 -->
+    <script>
+    // 设置默认语言为英语
+    document.addEventListener('DOMContentLoaded', function() {
+        changeLanguage('en');
+        
+        // 点击外部关闭下拉菜单
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.language-dropdown')) {
+                document.querySelector('.language-dropdown-content').classList.add('hidden');
+            }
+        });
+    });
+
+    const translations = {
+        en: {
+            title: "LoL Tactics Tool - Ultimate League of Legends Strategy Assistant",
+            description: "Professional League of Legends and Teamfight Tactics data analysis platform to help you reach the top rank",
+            about: "About Our Tool",
+            features: "Core Features",
+            dataSource: "Data Source",
+            realtime: "Real-time Strategy Analysis Tool",
+            introText: "LoL Tactics Tool is a professional strategy analysis platform designed for League of Legends and Teamfight Tactics players. We integrate match data from top players worldwide and use algorithms to provide you with optimal champion combinations, item builds, and tactical strategies.",
+            feature1: "Real-time updated metadata for League of Legends and Teamfight Tactics",
+            feature2: "Intelligent team composition recommendations based on millions of matches",
+            feature3: "Personalized tactical analysis and win rate prediction",
+            feature4: "Cross-platform synchronization of your collections and notes",
+            dataText: "Our data comes from the Riot Games official API, combined with analysis of match records from top global servers. Updated every 24 hours to ensure you receive the latest and most accurate strategy recommendations."
+        },
+        ja: {
+            title: "LoL Tactics Tool - リーグ・オブ・レジェンド戦略アシスタント",
+            description: "プロフェッショナルなリーグ・オブ・レジェンドとチームファイトタクティクスのデータ分析プラットフォーム",
+            about: "ツールについて",
+            features: "主な機能",
+            dataSource: "データソース",
+            realtime: "リアルタイム戦略分析ツール"
+        },
+        zh: {
+            title: "LoL Tactics Tool - 终极英雄联盟策略助手",
+            description: "专业级的英雄联盟(League of Legends)和云顶之弈(Teamfight Tactics)数据分析平台，助您登顶排位",
+            about: "关于我们的工具",
+            features: "核心功能",
+            dataSource: "数据来源",
+            realtime: "实时策略分析工具",
+            introText: "LoL Tactics Tool 是为英雄联盟和云顶之弈玩家设计的专业策略分析平台。我们整合了全球顶尖玩家的对战数据，通过算法分析为您提供最优的英雄搭配、装备选择和战术策略。",
+            feature1: "实时更新的英雄联盟和云顶之弈元数据",
+            feature2: "基于百万场对战的智能阵容推荐",
+            feature3: "个性化战术分析和胜率预测",
+            feature4: "跨平台同步您的收藏和笔记",
+            dataText: "我们的数据来自Riot Games官方API，并结合了全球顶级服务器的对战记录分析。每24小时更新一次，确保您获得最新最准确的策略建议。",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 英雄联盟策略工具. 保留所有权利。",
+            privacy: "隐私政策",
+            terms: "服务条款",
+            contact: "联系我们"
+        },
+        'zh-tw': {
+            title: "LoL Tactics Tool - 終極英雄聯盟策略助手",
+            description: "專業級的英雄聯盟(League of Legends)和聯盟戰棋(Teamfight Tactics)數據分析平台，助您登頂排位",
+            about: "關於我們的工具",
+            features: "核心功能",
+            dataSource: "數據來源",
+            realtime: "即時策略分析工具",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 英雄聯盟策略工具. 版權所有。",
+            privacy: "隱私政策",
+            terms: "服務條款",
+            contact: "聯絡我們"
+        },
+        ko: {
+            title: "LoL Tactics Tool - 리그 오브 레전드 전략 도우미",
+            description: "리그 오브 레전드와 전략적 팀 전투(TFT)를 위한 전문 데이터 분석 플랫폼",
+            about: "도구 소개",
+            features: "주요 기능",
+            dataSource: "데이터 출처",
+            realtime: "실시간 전략 분석 도구",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 리그 오브 레전드 전략 도구. 모든 권리 보유.",
+            privacy: "개인정보 처리방침",
+            terms: "서비스 약관",
+            contact: "문의하기"
+        },
+        es: {
+            title: "LoL Tactics Tool - Asistente de estrategia para League of Legends",
+            description: "Plataforma profesional de análisis de datos para League of Legends y Teamfight Tactics",
+            about: "Sobre nuestra herramienta",
+            features: "Características principales",
+            dataSource: "Fuente de datos",
+            realtime: "Herramienta de análisis de estrategia en tiempo real",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 Herramienta de estrategia LoL. Todos los derechos reservados.",
+            privacy: "Política de privacidad",
+            terms: "Términos de servicio",
+            contact: "Contáctenos"
+        },
+        fr: {
+            title: "LoL Tactics Tool - Assistant de stratégie pour League of Legends",
+            description: "Plateforme professionnelle d'analyse de données pour League of Legends et Teamfight Tactics",
+            about: "À propos de notre outil",
+            features: "Fonctionnalités principales",
+            dataSource: "Source des données",
+            realtime: "Outil d'analyse stratégique en temps réel",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 Outil de stratégie LoL. Tous droits réservés.",
+            privacy: "Politique de confidentialité",
+            terms: "Conditions d'utilisation",
+            contact: "Contactez-nous"
+        },
+        it: {
+            title: "LoL Tactics Tool - Assistente strategico per League of Legends",
+            description: "Piattaforma professionale di analisi dati per League of Legends e Teamfight Tactics",
+            about: "Informazioni sul nostro strumento",
+            features: "Funzionalità principali",
+            dataSource: "Fonte dei dati",
+            realtime: "Strumento di analisi strategica in tempo reale",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 Strumento strategico LoL. Tutti i diritti riservati.",
+            privacy: "Privacy Policy",
+            terms: "Termini di servizio",
+            contact: "Contattaci"
+        },
+        de: {
+            title: "LoL Tactics Tool - Strategie-Assistent für League of Legends",
+            description: "Professionelle Datenanalyse-Plattform für League of Legends und Teamfight Tactics",
+            about: "Über unser Tool",
+            features: "Kernfunktionen",
+            dataSource: "Datenquelle",
+            realtime: "Echtzeit-Strategieanalyse-Tool",
+            footerTitle: "LoLTacticsTool.online",
+            copyright: "© 2023 LoL-Strategie-Tool. Alle Rechte vorbehalten.",
+            privacy: "Datenschutz",
+            terms: "Nutzungsbedingungen",
+            contact: "Kontakt"
+        }
+    };
+
+    function changeLanguage(lang) {
+        const t = translations[lang] || translations['en'];
+        document.title = t.title;
+        document.querySelector('h1').textContent = t.title;
+        document.querySelector('main p').textContent = t.description;
+        document.querySelectorAll('h2')[0].textContent = t.about;
+        document.querySelectorAll('h3')[0].textContent = t.features;
+        document.querySelectorAll('h3')[1].textContent = t.dataSource;
+        document.querySelectorAll('h2')[1].textContent = t.realtime;
+        
+        // 更新段落和列表内容
+        document.querySelector('.prose p').textContent = t.introText || document.querySelector('.prose p').textContent;
+        const featureItems = document.querySelectorAll('.prose ul li');
+        if (featureItems.length >= 4) {
+            featureItems[0].textContent = t.feature1 || featureItems[0].textContent;
+            featureItems[1].textContent = t.feature2 || featureItems[1].textContent;
+            featureItems[2].textContent = t.feature3 || featureItems[2].textContent;
+            featureItems[3].textContent = t.feature4 || featureItems[3].textContent;
+        }
+        document.querySelectorAll('.prose p')[1].textContent = t.dataText || document.querySelectorAll('.prose p')[1].textContent;
+        
+        // 更新导航栏当前语言显示
+        document.querySelector('.language-button span').textContent = 
+            lang === 'en' ? 'English' : 
+            lang === 'ja' ? '日本語' :
+            lang === 'ko' ? '한국어' :
+            lang === 'es' ? 'Español' :
+            lang === 'zh' ? '简体中文' :
+            lang === 'zh-tw' ? '繁體中文' :
+            lang === 'fr' ? 'Français' :
+            lang === 'it' ? 'Italiano' : 'Deutsch';
+            
+        // 更新页脚内容
+        document.querySelector('footer span').textContent = t.footerTitle || 'LoLTacticsTool.online';
+        document.querySelector('footer p').textContent = t.copyright || '© 2023 LoL Tactics Tool. All rights reserved.';
+        const footerLinks = document.querySelectorAll('footer a');
+        footerLinks[0].textContent = t.privacy || 'Privacy Policy';
+        footerLinks[1].textContent = t.terms || 'Terms of Service';
+        footerLinks[2].textContent = t.contact || 'Contact Us';
+        
+        // 添加平滑过渡效果
+        document.body.style.opacity = 0;
+        setTimeout(() => {
+            document.body.style.transition = 'opacity 0.3s ease';
+            document.body.style.opacity = 1;
+        }, 10);
+    }
+    </script>
+    
+    <style>
+        body {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        .language-dropdown-content {
+            transition: all 0.2s ease;
+        }
+        @media (max-width: 768px) {
+            .iframe-container {
+                padding-bottom: 120%;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .prose ul {
+                padding-left: 1rem;
+            }
+        }
+        @media (min-width: 769px) {
+            .iframe-container {
+                padding-bottom: 56.25%;
+            }
+        }
+    </style>
+</head>
+<body class="bg-apple-light text-apple-dark min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-semibold text-apple-blue">LoLTacticsTool</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <!-- 多语言切换下拉菜单 -->
+                    <div class="relative group">
+                        <div class="relative language-dropdown">
+                            <button onclick="document.querySelector('.language-dropdown-content').classList.toggle('hidden')" 
+                                class="language-button flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-apple-gray">
+                                <i class="fas fa-globe text-apple-blue"></i>
+                                <span>English</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div class="language-dropdown-content absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-50">
+                                <a href="#" onclick="changeLanguage('en');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">English</a>
+                                <a href="#" onclick="changeLanguage('ja');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">日本語</a>
+                                <a href="#" onclick="changeLanguage('ko');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">한국어</a>
+                                <a href="#" onclick="changeLanguage('es');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">Español</a>
+                                <a href="#" onclick="changeLanguage('zh');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">简体中文</a>
+                                <a href="#" onclick="changeLanguage('zh-tw');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">繁體中文</a>
+                                <a href="#" onclick="changeLanguage('fr');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">Français</a>
+                                <a href="#" onclick="changeLanguage('it');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">Italiano</a>
+                                <a href="#" onclick="changeLanguage('de');document.querySelector('.language-dropdown-content').classList.add('hidden')" class="block px-4 py-2 text-sm hover:bg-apple-gray">Deutsch</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- H1标题 -->
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-apple-blue mb-6">LoL Tactics Tool - 终极英雄联盟策略助手</h1>
+        
+        <!-- 一句话介绍 -->
+        <p class="text-lg text-center text-gray-600 mb-8">专业级的英雄联盟(League of Legends)和云顶之弈(Teamfight Tactics)数据分析平台，助您登顶排位</p>
+        
+        <!-- 游戏基本情况叙述 -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold text-apple-blue mb-4">关于我们的工具</h2>
+            <div class="prose max-w-none">
+                <p>LoL Tactics Tool 是为英雄联盟和云顶之弈玩家设计的专业策略分析平台。我们整合了全球顶尖玩家的对战数据，通过算法分析为您提供最优的英雄搭配、装备选择和战术策略。</p>
+                
+                <h3 class="text-xl font-semibold mt-6 mb-3">核心功能</h3>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>实时更新的英雄联盟和云顶之弈元数据</li>
+                    <li>基于百万场对战的智能阵容推荐</li>
+                    <li>个性化战术分析和胜率预测</li>
+                    <li>跨平台同步您的收藏和笔记</li>
+                </ul>
+                
+                <h3 class="text-xl font-semibold mt-6 mb-3">数据来源</h3>
+                <p>我们的数据来自Riot Games官方API，并结合了全球顶级服务器的对战记录分析。每24小时更新一次，确保您获得最新最准确的策略建议。</p>
+            </div>
+        </section>
+        
+        <!-- IFRAME容器 -->
+        <section class="mb-12">
+            <h2 class="text-2xl font-semibold text-apple-blue mb-4">实时策略分析工具</h2>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="iframe-container relative w-full overflow-hidden">
+                    <iframe 
+                        src="https://tactics.tools/info/set-update" 
+                        class="absolute top-0 left-0 w-full h-full border-0"
+                        allowfullscreen
+                        loading="lazy"
+                        title="LoL Tactics Tool - 云顶之弈策略分析"
+                    ></iframe>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-apple-dark text-white py-8">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <span class="text-xl font-semibold">LoLTacticsTool.online</span>
+                    <p class="text-apple-gray mt-2">© 2023 英雄联盟策略工具. 保留所有权利。</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="hover:text-apple-blue">隐私政策</a>
+                    <a href="#" class="hover:text-apple-blue">服务条款</a>
+                    <a href="#" class="hover:text-apple-blue">联系我们</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
