@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Our Group Calendar</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="./js/tailwindcss.js"></script>
+    <!-- Confetti Library -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script> -->
+    <script src="./js/confrtti_browser.js"></script>
+    <!-- Google Fonts -->
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet"> -->
+    <link rel="stylesheet" href="./css/googleapis.css">
+    <!-- FontAwesome for Icons -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
+    <link rel="stylesheet" href="./css/awesome.css">
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        /* BACKGROUND IMAGE SETTINGS */
+        .bg-image {
+            /* 在这里替换你们的合照 URL */
+            background-image: url('./img/shu.png');
+            background-size: cover;
+            background-position: center;
+            filter: brightness(0.5); /* 稍微调暗一点，让文字更清晰 */
+        }
+
+        /* Glassmorphism Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Special Day Pulse Animation */
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+        }
+
+        .special-day-marker {
+            animation: pulse-gold 2s infinite;
+        }
+
+        /* Lyrics Styling */
+        .lyrics-container {
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+        }
+        
+        .lyric-line {
+            opacity: 0.5;
+            transform: scale(0.95);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .lyric-line.active {
+            opacity: 1;
+            transform: scale(1.05);
+            font-weight: bold;
+            color: #fbbf24; /* Amber-400 */
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        /* Rotating Disc Animation for Player */
+        .spin-slow {
+            animation: spin 8s linear infinite;
+        }
+        .paused-spin {
+            animation-play-state: paused;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar hiding */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen bg-black text-white relative">
+
+    <!-- Actual Audio Element (Controlled by JS) -->
+    <audio id="main-audio"></audio>
+    <!-- TTS Audio Element -->
+    <audio id="tts-player"></audio>
+
+    <!-- BACKGROUND LAYER -->
+    <div id="bg-layer" class="absolute inset-0 bg-image z-0"></div>
+
+    <!-- WELCOME OVERLAY -->
+    <div id="start-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 transition-opacity duration-700">
+        <div class="text-center space-y-6 p-6">
+            <h1 class="text-4xl font-bold text-white tracking-widest">MEMORIES</h1>
+            <p class="text-gray-300">Tap to start the music</p>
+            <button id="enter-btn" class="glass px-8 py-4 rounded-full text-xl font-semibold text-white hover:bg-white/20 transition">
+                Enter
+            </button>
+        </div>
+    </div>
+
+    <!-- MUSIC PLAYER: FLOATING BUTTON (Minimized) -->
+    <div id="music-fab" class="absolute bottom-6 right-6 z-30 transition-transform duration-300 hover:scale-110 hidden opacity-0 cursor-pointer">
+        <div class="glass w-14 h-14 rounded-full flex items-center justify-center relative">
+            <div id="fab-spin" class="absolute inset-1 rounded-full border-2 border-white/30 border-t-purple-400 spin-slow paused-spin"></div>
+            <i class="fa-solid fa-music text-xl"></i>
+        </div>
+    </div>
+
+    <!-- MUSIC PLAYER: EXPANDED OVERLAY -->
+    <div id="music-overlay" class="fixed inset-0 z-40 flex flex-col justify-end bg-black/60 backdrop-blur-md translate-y-full transition-transform duration-500 ease-out">
+        
+        <!-- Drag Handle / Close Area -->
+        <div id="close-music-area" class="flex-grow w-full transparent"></div>
+
+        <!-- Player Card -->
+        <div class="glass-dark w-full rounded-t-3xl p-6 pb-10 max-h-[85vh] flex flex-col shadow-2xl border-t border-white/10">
+            
+            <!-- Close Button -->
+            <div class="w-full flex justify-center mb-2">
+                <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
+            </div>
+            
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-4">
+                    <div id="album-art" class="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg flex items-center justify-center text-2xl spin-slow paused-spin">
+                        🎵
+                    </div>
+                    <div>
+                        <h3 id="song-title" class="font-bold text-lg truncate max-w-[200px]">Song Title</h3>
+                        <p id="song-artist" class="text-xs text-gray-400">Artist Name</p>
+                    </div>
+                </div>
+                <button id="minimize-btn" class="p-3 text-white/50 hover:text-white">
+                    <i class="fa-solid fa-chevron-down text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Lyrics Area -->
+            <div id="lyrics-container" class="lyrics-container h-48 md:h-64 overflow-y-auto no-scrollbar text-center space-y-4 mb-6 relative px-4">
+                <p class="text-white/30 italic mt-20">Lyrics will appear here...</p>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-white/10 h-1.5 rounded-full mb-6 cursor-pointer group" id="progress-container">
+                <div id="progress-bar" class="bg-purple-500 h-full rounded-full w-0 relative group-hover:bg-purple-400 transition-all">
+                    <div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 shadow-md"></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-between items-center px-4">
+                <button id="prev-song" class="text-white/70 hover:text-white transition"><i class="fa-solid fa-backward-step text-2xl"></i></button>
+                <button id="play-pause" class="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 transition shadow-lg shadow-purple-500/20">
+                    <i class="fa-solid fa-play text-2xl pl-1" id="play-icon"></i>
+                </button>
+                <button id="next-song" class="text-white/70 hover:text-white transition"><i class="fa-solid fa-forward-step text-2xl"></i></button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN CALENDAR CONTENT -->
+    <div id="main-content" class="relative z-10 h-full flex flex-col items-center justify-center p-4 hidden opacity-0 transition-opacity duration-1000">
+        
+        <!-- Calendar Container -->
+        <div class="glass w-full max-w-md rounded-3xl p-6 text-center relative overflow-hidden flex flex-col max-h-[75vh]">
+            
+            <!-- Header -->
+            <div class="mb-4 flex flex-col items-center shrink-0">
+                <div class="flex justify-between items-center w-full mb-2">
+                    <button id="prev-month" class="p-2 text-white/70 hover:text-white">&lt;</button>
+                    <h2 id="month-year" class="text-2xl font-bold text-white drop-shadow-md"></h2>
+                    <button id="next-month" class="p-2 text-white/70 hover:text-white">&gt;</button>
+                </div>
+                <!-- Fortune Button -->
+                <button id="fortune-btn" class="text-xs bg-purple-500/30 hover:bg-purple-500/50 px-3 py-1 rounded-full text-purple-100 transition flex items-center gap-1 border border-purple-400/30">
+                    🔮 今日运势
+                </button>
+            </div>
+
+            <!-- Days of Week -->
+            <div class="grid grid-cols-7 gap-2 mb-2 text-xs font-semibold text-white/60 uppercase tracking-wide shrink-0">
+                <div>Sun</div>
+                <div>Mon</div>
+                <div>Tue</div>
+                <div>Wed</div>
+                <div>Thu</div>
+                <div>Fri</div>
+                <div>Sat</div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-2 overflow-y-auto flex-grow no-scrollbar">
+                <!-- Days injected by JS -->
+            </div>
+
+            <!-- AI Quote Footer -->
+            <div class="mt-4 pt-4 border-t border-white/10 shrink-0">
+                <p class="text-sm text-white/80 italic min-h-[3em]" id="daily-quote">"Best friends are the people in life that make you laugh a little louder..."</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FOR EVENTS -->
+    <div id="event-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 hidden backdrop-blur-sm p-4">
+        <div class="glass bg-black/40 rounded-2xl p-6 max-w-sm w-full text-center transform transition-all scale-95 opacity-0 flex flex-col max-h-[80vh] overflow-y-auto" id="modal-content">
+            <div class="text-5xl mb-4" id="modal-emoji">📅</div>
+            <h3 class="text-2xl font-bold mb-2" id="modal-title">Title</h3>
+            <p class="text-white/80 mb-6" id="modal-desc">Description</p>
+            <button onclick="closeModal()" class="text-white/50 hover:text-white text-sm mt-2 underline">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. PLAYLIST & LYRICS CONFIGURATION ---
+        const playlist = [
+            {
+                title: "噗噗宇宙观察队",
+                artist: "精神文明建设委员会",
+                url: "./mp3/噗噗宇宙观察队.mp3",
+                lyrics: `
+[00:00.00] (Music Start)
+[00:07.00] 今夜星光灿烂，我们相聚在一起
+[00:10.00] 精神文明建设委员会，友谊永不会散
+[00:14.00] 欢声笑语不停歇，快乐永远在身边
+[00:18.00] 噗噗宇宙观察队，探索美好的明天
+[00:21.00] 噗噗宇宙观察队，我们是最佳拍档
+[00:25.00] 手牵手肩并肩，友谊地久天长
+[00:28.00] 精神文明建设，让心灵更加明亮
+[00:32.00] 噗噗宇宙观察队，永远不散场
+[00:37.00] 每一次的聚会，都是珍贵回忆
+[00:40.50] 分享快乐时光，消除所有疲惫
+[00:44.00] 无论走到哪里，心中都有你们
+[00:46.80] 噗噗宇宙的旅程，因为有你们而完美
+[00:52.70] 从日出到日落，从春天到冬天
+[00:56.00] 友谊如同美酒，越陈越香醇
+[01:00.00] 精神文明建设，让生活更美好
+[01:03.00] 噗噗宇宙观察队，永远心连心
+[01:07.80] 噗噗宇宙观察队，我们是最佳拍档
+[01:11.80] 手牵手肩并肩，友谊地久天长
+[01:15.40] 精神文明建设，让心灵更加明亮
+[01:19.00] 噗噗宇宙观察队，永远不散场
+[01:45.00] (Music End)
+                `
+            },
+            {
+                title: "Friendship Days",
+                artist: "Our Group",
+                url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
+                lyrics: `
+[00:00.00]Instrumental Intro...
+[00:05.00]Remember when we first met?
+[00:09.00]Walking down that street...
+[00:13.00]Laughing at everything.
+[00:18.00]Time flies so fast.
+[00:22.00]But we are still here.
+[00:26.00]Best friends forever.
+[00:30.00](Music playing...)
+                `
+            }
+        ];
+
+        // --- 2. MUSIC PLAYER LOGIC ---
+        const audio = document.getElementById('main-audio');
+        const playBtn = document.getElementById('play-pause');
+        const playIcon = document.getElementById('play-icon');
+        const prevSongBtn = document.getElementById('prev-song');
+        const nextSongBtn = document.getElementById('next-song');
+        const musicFab = document.getElementById('music-fab');
+        const fabSpin = document.getElementById('fab-spin');
+        const musicOverlay = document.getElementById('music-overlay');
+        const minimizeBtn = document.getElementById('minimize-btn');
+        const closeMusicArea = document.getElementById('close-music-area');
+        const albumArt = document.getElementById('album-art');
+        
+        const uiTitle = document.getElementById('song-title');
+        const uiArtist = document.getElementById('song-artist');
+        const uiLyrics = document.getElementById('lyrics-container');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+
+        let currentSongIndex = 0;
+        let parsedLyrics = [];
+        let isPlaying = false;
+
+        // Parse LRC String into Array of Objects
+        function parseLRC(lrcText) {
+            const lines = lrcText.split('\n');
+            const result = [];
+            const timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+            
+            lines.forEach(line => {
+                const match = timeReg.exec(line);
+                if (match) {
+                    const min = parseInt(match[1]);
+                    const sec = parseInt(match[2]);
+                    const ms = parseInt(match[3].padEnd(3, '0')); // Handle 2 or 3 digit ms
+                    const time = min * 60 + sec + ms / 1000;
+                    const text = line.replace(timeReg, '').trim();
+                    if(text) result.push({ time, text });
+                }
+            });
+            return result;
+        }
+
+        function loadSong(index) {
+            const song = playlist[index];
+            audio.src = song.url;
+            uiTitle.innerText = song.title;
+            uiArtist.innerText = song.artist;
+            
+            // Reset lyrics UI
+            uiLyrics.innerHTML = '';
+            parsedLyrics = parseLRC(song.lyrics);
+            
+            if (parsedLyrics.length === 0) {
+                uiLyrics.innerHTML = '<p class="text-white/30 italic mt-20">No lyrics available</p>';
+            } else {
+                // Generate HTML for lyrics
+                // Add empty space at top and bottom for center scrolling
+                const padding = document.createElement('div');
+                padding.className = "h-24";
+                uiLyrics.appendChild(padding.cloneNode());
+                
+                parsedLyrics.forEach((line, i) => {
+                    const p = document.createElement('p');
+                    p.className = `lyric-line text-lg transition-all duration-300`;
+                    p.innerText = line.text;
+                    p.dataset.index = i;
+                    p.dataset.time = line.time;
+                    p.addEventListener('click', () => {
+                        audio.currentTime = line.time;
+                        playMusic();
+                    });
+                    uiLyrics.appendChild(p);
+                });
+
+                uiLyrics.appendChild(padding);
+            }
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                playMusic();
+            } else {
+                pauseMusic();
+            }
+        }
+
+        function playMusic() {
+            audio.play().then(() => {
+                isPlaying = true;
+                playIcon.className = 'fa-solid fa-pause text-2xl pl-0';
+                fabSpin.classList.remove('paused-spin');
+                albumArt.classList.remove('paused-spin');
+            }).catch(e => console.log("Playback error", e));
+        }
+
+        function pauseMusic() {
+            audio.pause();
+            isPlaying = false;
+            playIcon.className = 'fa-solid fa-play text-2xl pl-1';
+            fabSpin.classList.add('paused-spin');
+            albumArt.classList.add('paused-spin');
+        }
+
+        function playNext() {
+            currentSongIndex = (currentSongIndex + 1) % playlist.length;
+            loadSong(currentSongIndex);
+            playMusic();
+        }
+
+        function playPrev() {
+            currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+            loadSong(currentSongIndex);
+            playMusic();
+        }
+
+        // Sync Lyrics & Progress
+        audio.addEventListener('timeupdate', () => {
+            const currentTime = audio.currentTime;
+            
+            // Update Progress Bar
+            if (audio.duration) {
+                const percent = (currentTime / audio.duration) * 100;
+                progressBar.style.width = `${percent}%`;
+            }
+
+            // Update Lyrics
+            if (parsedLyrics.length > 0) {
+                let activeIndex = -1;
+                for (let i = 0; i < parsedLyrics.length; i++) {
+                    if (currentTime >= parsedLyrics[i].time) {
+                        activeIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (activeIndex !== -1) {
+                    const lines = document.querySelectorAll('.lyric-line');
+                    lines.forEach(l => l.classList.remove('active'));
+                    
+                    const activeLine = lines[activeIndex];
+                    if (activeLine) {
+                        activeLine.classList.add('active');
+                        activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        });
+
+        // Click on progress bar to seek
+        progressContainer.addEventListener('click', (e) => {
+            const width = progressContainer.clientWidth;
+            const clickX = e.offsetX;
+            const duration = audio.duration;
+            audio.currentTime = (clickX / width) * duration;
+        });
+
+        audio.addEventListener('ended', playNext); // Auto play next
+
+        // UI Controls
+        playBtn.addEventListener('click', togglePlay);
+        nextSongBtn.addEventListener('click', playNext);
+        prevSongBtn.addEventListener('click', playPrev);
+
+        // Open/Close Player
+        function openPlayer() {
+            musicOverlay.classList.remove('translate-y-full');
+            musicFab.classList.add('scale-0'); // Hide FAB
+        }
+        function closePlayer() {
+            musicOverlay.classList.add('translate-y-full');
+            musicFab.classList.remove('scale-0'); // Show FAB
+        }
+
+        musicFab.addEventListener('click', openPlayer);
+        minimizeBtn.addEventListener('click', closePlayer);
+        closeMusicArea.addEventListener('click', closePlayer);
+
+
+        // --- 3. EXISTING APP LOGIC (CALENDAR & AI) ---
+        const apiKey = ""; // Environment provided
+        
+        async function generateGeminiText(prompt) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) { return "AI is sleeping. Try again!"; }
+        }
+
+        async function generateGeminiSpeech(text) {
+             try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: text }] }],
+                    generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } } } }
+                };
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await response.json();
+                const audioContent = data.candidates[0].content.parts[0].inlineData.data;
+                
+                // Helper to play Raw PCM
+                const binaryString = window.atob(audioContent);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                
+                const wavHeader = new Uint8Array(44);
+                const view = new DataView(wavHeader.buffer);
+                writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + bytes.length, true); writeString(view, 8, 'WAVE');
+                writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+                view.setUint32(24, 24000, true); view.setUint32(28, 48000, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+                writeString(view, 36, 'data'); view.setUint32(40, bytes.length, true);
+                
+                const blob = new Blob([wavHeader, bytes], { type: 'audio/wav' });
+                const player = document.getElementById('tts-player');
+                player.src = URL.createObjectURL(blob);
+                
+                // Low volume for speech if music is playing
+                if(isPlaying) audio.volume = 0.2;
+                player.play();
+                player.onended = () => { if(isPlaying) audio.volume = 1.0; };
+
+            } catch (error) { console.error("TTS Error", error); }
+        }
+        function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
+
+        // Data & Elements
+        const specialDates = {
+            "10-20": { title: "Group Anniversary!", desc: "The day we all became best friends.", emoji: "🥂", type: "anniversary" },
+            "10-25": { title: "Sarah's Birthday", desc: "Don't forget to buy cake!", emoji: "🎂", type: "birthday" },
+            "11-25": { title: "Christmas Party", desc: "Secret Santa at John's house.", emoji: "🎄", type: "holiday" }
+        };
+
+        const startScreen = document.getElementById('start-screen');
+        const mainContent = document.getElementById('main-content');
+        const enterBtn = document.getElementById('enter-btn');
+        const calendarGrid = document.getElementById('calendar-grid');
+        const monthYearLabel = document.getElementById('month-year');
+        const modal = document.getElementById('event-modal');
+        const modalContent = document.getElementById('modal-content');
+        const prevBtn = document.getElementById('prev-month');
+        const nextBtn = document.getElementById('next-month');
+        const fortuneBtn = document.getElementById('fortune-btn');
+        const dailyQuote = document.getElementById('daily-quote');
+
+        let currentDate = new Date();
+        let currentSelectedDate = null;
+
+        // Initialization
+        loadSong(0); // Load first song
+
+        enterBtn.addEventListener('click', () => {
+            playMusic(); // Start the playlist
+            startScreen.style.opacity = '0';
+            setTimeout(() => {
+                startScreen.classList.add('hidden');
+                mainContent.classList.remove('hidden');
+                musicFab.classList.remove('hidden'); // Show music button
+                void mainContent.offsetWidth; 
+                mainContent.classList.remove('opacity-0');
+                musicFab.classList.remove('opacity-0');
+            }, 700);
+        });
+
+        // Calendar Render
+        function renderCalendar(date) {
+            calendarGrid.innerHTML = '';
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            monthYearLabel.innerText = `${monthNames[month]} ${year}`;
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+
+            for (let x = firstDayIndex; x > 0; x--) {
+                const div = document.createElement('div');
+                div.className = "h-12 rounded-lg bg-white/5 flex items-center justify-center text-white/20";
+                calendarGrid.appendChild(div);
+            }
+            const today = new Date();
+            for (let i = 1; i <= lastDay; i++) {
+                const dayKey = `${month}-${i}`;
+                const isSpecial = specialDates[dayKey];
+                const isToday = (i === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+                const cell = document.createElement('div');
+                cell.className = `day-cell h-12 w-12 rounded-full flex flex-col items-center justify-center cursor-pointer relative mx-auto hover:bg-white/10 ${isToday ? 'bg-white/20 border border-white/50' : ''}`;
+                cell.innerHTML = `<span class="text-sm font-bold">${i}</span>`;
+                if (isSpecial) {
+                    cell.classList.add('special-day-marker');
+                    cell.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
+                    cell.innerHTML += `<span class="text-xs -mt-1 leading-none">${isSpecial.emoji}</span>`;
+                }
+                cell.addEventListener('click', () => handleDayClick(i, month, year, isSpecial));
+                calendarGrid.appendChild(cell);
+            }
+        }
+
+        // Event Handling
+        function handleDayClick(day, month, year, specialEvent) {
+            currentSelectedDate = { day, month, year };
+
+            if (specialEvent) {
+                if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FFD700', '#FF69B4', '#00CED1'] });
+                document.getElementById('modal-emoji').innerText = specialEvent.emoji;
+                document.getElementById('modal-title').innerText = specialEvent.title;
+                document.getElementById('modal-desc').innerText = specialEvent.desc;
+            } else {
+                document.getElementById('modal-emoji').innerText = "📅";
+                document.getElementById('modal-title').innerText = `${month + 1}/${day}`;
+                document.getElementById('modal-desc').innerText = "No plans yet.";
+            }
+            openModal();
+        }
+
+        // Features
+
+        // 本地运势库 - 积极向上的中文运势
+        const localFortunes = [
+            "今日运势极佳，适合与好友们一起探索新事物，会有意外惊喜！",
+            "今日运势不错，是适合分享快乐的好日子，与朋友们一起创造美好回忆吧！",
+            "今日运势欠佳，但你的朋友会给你带来好运，一起行动将事半功倍！",
+            "今日适合与好友们一起放松，轻松的氛围会带来新的灵感！",
+            "今日运势尚可，与朋友一起聊天会带来正能量，互相支持会让每个人都闪闪发光！",
+            "今日运势极佳，是建立美好回忆的绝佳时机，与朋友们一起享受当下吧！",
+            "今日运势旺盛，适合与好友们一起尝试新活动，会有意想不到的乐趣！",
+            "今日运势欠佳，但你的友谊会带来温暖，互相陪伴会让每一天都变得特别！",
+            "今日运势尚可，是充满可能性的日子，与朋友们一起探索，会发现新的惊喜！",
+            "今日运势极佳，你的精神会达到顶峰，快去群里与朋友一起好好分享吧！",
+            "今日运势旺盛，适合与好友们一起庆祝，分享快乐会让好运加倍！",
+            "今日是充满正能量的一天，与朋友们一起会感受到满满的幸福感！",
+            "今日适合与好友们一起放松，轻松的氛围会带来新的想法！",
+            "今天你们的团队会充满创意，一起合作会创造出令人惊喜的成果！",
+            "今日运势极佳，适合与朋友们一起尝试新事物，会有美好的体验！"
+        ];
+
+        fortuneBtn.addEventListener('click', () => {
+            fortuneBtn.innerHTML = `🔮 预测中...`;
+            // 模拟占卜的延迟效果
+            setTimeout(() => {
+                // 随机选择一个运势
+                const randomIndex = Math.floor(Math.random() * localFortunes.length);
+                const text = localFortunes[randomIndex];
+                document.getElementById('modal-emoji').innerText = "🔮";
+                document.getElementById('modal-title').innerText = "今日运势";
+                document.getElementById('modal-desc').innerText = text;
+                openModal();
+                if(typeof confetti === 'function') confetti({ particleCount: 50, colors: ['#A020F0', '#FFFFFF'] });
+                fortuneBtn.innerHTML = "🔮 今日运势";
+            }, 500); // 500ms延迟，增加仪式感
+        });
+
+
+        // Utils
+        function openModal() {
+            modal.classList.remove('hidden');
+            setTimeout(() => { modalContent.classList.remove('scale-95', 'opacity-0'); modalContent.classList.add('scale-100', 'opacity-100'); }, 10);
+        }
+        function closeModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        prevBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(currentDate); });
+        nextBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(currentDate); });
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        renderCalendar(currentDate);
+
+    </script>
+</body>
+</html>
