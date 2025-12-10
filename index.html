@@ -245,6 +245,34 @@
     </div>
 
     <script>
+        // --- 0. SERVICE WORKER 注册（缓存策略）---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('[Service Worker] 注册成功:', registration.scope);
+                        
+                        // 检查是否有更新
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('[Service Worker] 新版本可用，刷新页面以更新');
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('[Service Worker] 注册失败:', error);
+                    });
+
+                // 监听 Service Worker 消息
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    console.log('[Service Worker] 收到消息:', event.data);
+                });
+            });
+        }
+
         // --- 1. PLAYLIST & LYRICS CONFIGURATION ---
         const playlist = [
             {
@@ -336,11 +364,31 @@
             return result;
         }
 
+        // 预缓存音频文件的函数
+        async function precacheAudio(url) {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                try {
+                    // 通过 Service Worker 缓存音频
+                    const response = await fetch(url, { cache: 'force-cache' });
+                    if (response.ok) {
+                        console.log('[缓存] 音频已缓存:', url);
+                    }
+                } catch (error) {
+                    console.log('[缓存] 音频缓存失败:', url, error);
+                }
+            }
+        }
+
         function loadSong(index) {
             const song = playlist[index];
             audio.src = song.url;
             uiTitle.innerText = song.title;
             uiArtist.innerText = song.artist;
+            
+            // 预缓存当前歌曲（后台进行，不影响播放）
+            if (song.url && !song.url.startsWith('http')) {
+                precacheAudio(song.url).catch(() => {}); // 静默失败
+            }
             
             // Reset lyrics UI
             uiLyrics.innerHTML = '';
