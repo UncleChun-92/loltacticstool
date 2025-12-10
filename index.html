@@ -248,29 +248,50 @@
         // --- 0. SERVICE WORKER 注册（缓存策略）---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
+                // 先尝试注销旧的 Service Worker（如果有问题）
+                navigator.serviceWorker.getRegistrations().then((registrations) => {
+                    return Promise.all(
+                        registrations.map((registration) => {
+                            if (registration.active && registration.active.scriptURL.includes('sw.js')) {
+                                console.log('[Service Worker] 发现旧版本，尝试更新...');
+                            }
+                        })
+                    );
+                }).catch(() => {});
+
+                navigator.serviceWorker.register('./sw.js', { scope: './' })
                     .then((registration) => {
                         console.log('[Service Worker] 注册成功:', registration.scope);
                         
                         // 检查是否有更新
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    console.log('[Service Worker] 新版本可用，刷新页面以更新');
-                                }
-                            });
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('[Service Worker] 新版本可用，刷新页面以更新');
+                                    } else if (newWorker.state === 'activated') {
+                                        console.log('[Service Worker] 新版本已激活');
+                                    }
+                                });
+                            }
                         });
                     })
                     .catch((error) => {
                         console.error('[Service Worker] 注册失败:', error);
+                        console.warn('[Service Worker] 将使用浏览器原生缓存');
+                        // Service Worker 失败不影响页面功能，只是无法使用高级缓存
                     });
 
                 // 监听 Service Worker 消息
-                navigator.serviceWorker.addEventListener('message', (event) => {
-                    console.log('[Service Worker] 收到消息:', event.data);
-                });
+                if (navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.addEventListener('message', (event) => {
+                        console.log('[Service Worker] 收到消息:', event.data);
+                    });
+                }
             });
+        } else {
+            console.log('[Service Worker] 浏览器不支持 Service Worker，将使用浏览器原生缓存');
         }
 
         // --- 1. PLAYLIST & LYRICS CONFIGURATION ---
@@ -381,14 +402,37 @@
 
         function loadSong(index) {
             const song = playlist[index];
-            audio.src = song.url;
+            
+            // 先停止当前播放
+            if (!audio.paused) {
+                audio.pause();
+            }
+            
+            // 清除之前的 src，强制重新加载
+            audio.src = '';
+            audio.load();
+            
+            // 设置新的音频源
             uiTitle.innerText = song.title;
             uiArtist.innerText = song.artist;
             
-            // 预缓存当前歌曲（后台进行，不影响播放）
-            if (song.url && !song.url.startsWith('http')) {
-                precacheAudio(song.url).catch(() => {}); // 静默失败
-            }
+            // 延迟设置 src，确保之前的加载已清除
+            setTimeout(() => {
+                audio.src = song.url;
+                audio.load();
+                
+                // 添加错误处理
+                audio.addEventListener('error', function onError(e) {
+                    audio.removeEventListener('error', onError);
+                    console.error('音频加载错误:', song.url, e);
+                    uiTitle.innerText = song.title + ' (加载失败)';
+                }, { once: true });
+                
+                // 预缓存当前歌曲（后台进行，不影响播放）
+                if (song.url && !song.url.startsWith('http')) {
+                    precacheAudio(song.url).catch(() => {}); // 静默失败
+                }
+            }, 50);
             
             // Reset lyrics UI
             uiLyrics.innerHTML = '';
@@ -429,12 +473,52 @@
         }
 
         function playMusic() {
-            audio.play().then(() => {
-                isPlaying = true;
-                playIcon.className = 'fa-solid fa-pause text-2xl pl-0';
-                fabSpin.classList.remove('paused-spin');
-                albumArt.classList.remove('paused-spin');
-            }).catch(e => console.log("Playback error", e));
+            // 确保音频已加载
+            if (!audio.src) {
+                const song = playlist[currentSongIndex];
+                audio.src = song.url;
+            }
+            
+            // 检查音频是否可播放
+            if (audio.readyState === 0) {
+                // 音频未加载，先加载
+                audio.load();
+                audio.addEventListener('canplay', function onCanPlay() {
+                    audio.removeEventListener('canplay', onCanPlay);
+                    audio.play().then(() => {
+                        isPlaying = true;
+                        playIcon.className = 'fa-solid fa-pause text-2xl pl-0';
+                        fabSpin.classList.remove('paused-spin');
+                        albumArt.classList.remove('paused-spin');
+                    }).catch(e => {
+                        console.error("Playback error", e);
+                        // 如果播放失败，尝试重新加载
+                        const song = playlist[currentSongIndex];
+                        audio.src = '';
+                        setTimeout(() => {
+                            audio.src = song.url;
+                            audio.load();
+                        }, 100);
+                    });
+                }, { once: true });
+                
+                // 添加错误处理
+                audio.addEventListener('error', function onError(e) {
+                    audio.removeEventListener('error', onError);
+                    console.error('音频加载错误:', e);
+                    alert('音频文件加载失败，请检查文件是否存在或格式是否正确');
+                }, { once: true });
+            } else {
+                // 音频已加载，直接播放
+                audio.play().then(() => {
+                    isPlaying = true;
+                    playIcon.className = 'fa-solid fa-pause text-2xl pl-0';
+                    fabSpin.classList.remove('paused-spin');
+                    albumArt.classList.remove('paused-spin');
+                }).catch(e => {
+                    console.error("Playback error", e);
+                });
+            }
         }
 
         function pauseMusic() {
