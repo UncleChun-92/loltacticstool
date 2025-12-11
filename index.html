@@ -426,53 +426,74 @@
             currentLoadingUrl = song.url;
             audioErrorHandled = false;
             
-            // 设置音频源，添加跨域支持
-            audio.crossOrigin = 'anonymous';
+            // 设置音频源
+            // 对于跨域音频，先尝试不使用 crossOrigin（某些 CDN 不支持 CORS）
+            if (song.url.startsWith('http') && !song.url.includes(location.hostname)) {
+                // 跨域音频，先尝试不使用 crossOrigin
+                audio.crossOrigin = null;
+            } else {
+                // 同域音频，可以使用 crossOrigin
+                audio.crossOrigin = 'anonymous';
+            }
             audio.src = song.url;
             
-            // 添加统一的错误处理（只添加一次）
+            // 添加统一的错误处理（只添加一次）- 静默处理大部分错误
             audio.addEventListener('error', function onError(e) {
-                // 检查是否是当前正在加载的 URL 的错误
-                if (audio.src !== currentLoadingUrl) {
-                    console.log('忽略旧音频的错误事件');
-                    return;
-                }
-                
-                if (audioErrorHandled) return;
-                
-                // 检查是否有真正的错误
-                if (!audio.error) {
-                    console.log('音频错误事件但没有错误对象，可能是临时状态');
-                    return;
-                }
-                
-                audioErrorHandled = true;
-                
-                const errorCode = audio.error.code;
-                const errorMessage = audio.error.message || '未知错误';
-                
-                // 只在有真正的错误码时才报告
-                if (errorCode === MediaError.MEDIA_ERR_ABORTED) {
-                    // 用户中止加载，不是真正的错误
-                    console.log('音频加载被中止（可能是切换歌曲）');
-                    return;
-                }
-                
-                console.warn('音频加载错误:', {
-                    url: song.url,
-                    code: errorCode,
-                    message: errorMessage,
-                    readyState: audio.readyState
-                });
-                
-                // 只在真正无法加载时显示提示
-                if (errorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-                    uiTitle.innerText = song.title + ' (格式不支持)';
-                } else if (errorCode === MediaError.MEDIA_ERR_NETWORK) {
-                    uiTitle.innerText = song.title + ' (网络错误)';
-                } else if (errorCode === MediaError.MEDIA_ERR_DECODE) {
-                    uiTitle.innerText = song.title + ' (解码错误)';
-                }
+                // 延迟检查，避免在切换歌曲时误报
+                setTimeout(() => {
+                    // 检查 src 是否为空（可能是切换歌曲时清空了）
+                    if (!audio.src || audio.src === '' || audio.src === window.location.href) {
+                        return; // 静默忽略
+                    }
+                    
+                    // 检查是否是当前正在加载的 URL 的错误
+                    if (audio.src !== currentLoadingUrl && currentLoadingUrl !== '') {
+                        return; // 静默忽略旧音频的错误
+                    }
+                    
+                    if (audioErrorHandled) {
+                        return; // 已处理过，忽略
+                    }
+                    
+                    // 检查是否有真正的错误对象
+                    if (!audio.error) {
+                        // 没有错误对象，可能是 CORS 问题或其他临时状态
+                        // 对于跨域音频，尝试不使用 crossOrigin 重新加载
+                        if (audio.crossOrigin && song.url.startsWith('http') && !song.url.includes(location.hostname)) {
+                            const currentSrc = audio.src;
+                            audio.crossOrigin = null;
+                            audio.src = '';
+                            setTimeout(() => {
+                                if (currentSrc === currentLoadingUrl) { // 确保还是当前歌曲
+                                    audio.src = currentSrc;
+                                    audio.load();
+                                }
+                            }, 100);
+                        }
+                        return; // 静默处理
+                    }
+                    
+                    audioErrorHandled = true;
+                    
+                    const errorCode = audio.error.code;
+                    
+                    // 忽略用户中止的错误
+                    if (errorCode === MediaError.MEDIA_ERR_ABORTED) {
+                        return; // 静默忽略
+                    }
+                    
+                    // 只在严重错误时记录和显示
+                    if (errorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED || 
+                        errorCode === MediaError.MEDIA_ERR_DECODE) {
+                        // 只在开发环境或真正需要时才记录
+                        if (errorCode === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+                            uiTitle.innerText = song.title + ' (格式不支持)';
+                        } else if (errorCode === MediaError.MEDIA_ERR_DECODE) {
+                            uiTitle.innerText = song.title + ' (解码错误)';
+                        }
+                    }
+                    // 网络错误和其他错误完全静默处理，不输出任何日志
+                }, 200); // 增加延迟，确保错误对象已设置
             }, { once: true });
             
             // 添加加载成功监听
@@ -533,7 +554,12 @@
             // 确保音频已加载
             if (!audio.src) {
                 const song = playlist[currentSongIndex];
-                audio.crossOrigin = 'anonymous';
+                // 使用与 loadSong 相同的 crossOrigin 逻辑
+                if (song.url.startsWith('http') && !song.url.includes(location.hostname)) {
+                    audio.crossOrigin = null; // 跨域音频，不使用 crossOrigin
+                } else {
+                    audio.crossOrigin = 'anonymous'; // 同域音频，使用 crossOrigin
+                }
                 audio.src = song.url;
                 audio.load();
             }
