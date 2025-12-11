@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="app-version" content="1.0.3">
+    <meta name="app-version" content="1.0.4">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Our Group Calendar</title>
+    <title>PuPu Calendar</title>
     <!-- Tailwind CSS for styling -->
     <script src="./js/tailwindcss.js"></script>
     <!-- Confetti Library -->
@@ -129,7 +129,7 @@
     <div id="start-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 transition-opacity duration-700">
         <div class="text-center space-y-6 p-6">
             <h1 class="text-4xl font-bold text-white tracking-widest">MEMORIES</h1>
-            <p class="text-gray-300">Tap to start the music</p>
+            <p class="text-gray-300">Tap to start</p>
             <button id="enter-btn" class="glass px-8 py-4 rounded-full text-xl font-semibold text-white hover:bg-white/20 transition">
                 Enter
             </button>
@@ -251,7 +251,7 @@
 
     <script>
         // --- 0. 版本管理和无感自动更新检测 ---
-        const APP_VERSION = '1.0.3'; // 每次更新时修改这个版本号
+        const APP_VERSION = '1.0.4'; // 每次更新时修改这个版本号
         
         // 检查是否是刷新后的页面（避免无限循环）
         const isReloaded = sessionStorage.getItem('app-reloading') === 'true';
@@ -904,19 +904,20 @@
         function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i)); }
 
         // Data & Elements
+        // 注意：月份使用 JavaScript 的月份索引（0-11），0=一月，11=十二月
         const specialDates = {
-            "00-01": { title: "Happy New Year", desc: "Becoming healthier, richer and happier.", emoji: "🥳", type: "holiday" },
-            "00-25": { title: "Timo's Birthday", desc: "原来越大只！越来越幸福", emoji: "🎂", type: "birthday" },
-            "02-08": { title: "发哥's Birthday", desc: "低调的美美过日子吧！", emoji: "🎂", type: "birthday" },
-            "04-05": { title: "lonm's Birthday", desc: "完成更多的人生清单", emoji: "🎂", type: "birthday" },
-            "04-10": { title: "Seayo's Birthday", desc: "青春，美丽，活力四射，财富自由", emoji: "🎂", type: "birthday" },
-            "04-15": { title: "🥬's Birthday", desc: "该来的另一半总会到的", emoji: "🎂", type: "birthday" },
-            "04-20": { title: "Steve's Birthday", desc: "健康，幸福，财富自由", emoji: "🎂", type: "birthday" },
-            "06-14": { title: "❓'s Birthday", desc: "创作出越来越多满意的作品", emoji: "🎂", type: "birthday" },
-            "08-17": { title: "💪🏻文's Birthday", desc: "以后见到白净爱运动高靓女请介绍给我谢谢", emoji: "🎂", type: "birthday" },
-            "09-09": { title: "昭君's Birthday", desc: "双猫齐全，幸福满满", emoji: "🎂", type: "birthday" },
-            "09-25": { title: "💰's Birthday", desc: "DogRich, Don'tForget", emoji: "🎂", type: "birthday" },
-            "09-28": { title: "🐮's Birthday", desc: "身体健康，遇到那个ta", emoji: "🎂", type: "birthday" },
+            "0-1": { title: "Happy New Year", desc: "Becoming healthier, richer and happier.", emoji: "🥳", type: "holiday" },
+            "0-25": { title: "Timo's Birthday", desc: "原来越大只！越来越幸福", emoji: "🎂", type: "birthday" },
+            "2-8": { title: "发哥's Birthday", desc: "低调的美美过日子吧！", emoji: "🎂", type: "birthday" },
+            "4-5": { title: "lonm's Birthday", desc: "完成更多的人生清单", emoji: "🎂", type: "birthday" },
+            "4-10": { title: "Seayo's Birthday", desc: "青春，美丽，活力四射，财富自由", emoji: "🎂", type: "birthday" },
+            "4-15": { title: "🥬's Birthday", desc: "该来的另一半总会到的", emoji: "🎂", type: "birthday" },
+            "4-20": { title: "Steve's Birthday", desc: "健康，幸福，财富自由", emoji: "🎂", type: "birthday" },
+            "6-14": { title: "❓'s Birthday", desc: "创作出越来越多满意的作品", emoji: "🎂", type: "birthday" },
+            "8-17": { title: "💪🏻文's Birthday", desc: "以后见到白净爱运动高靓女请介绍给我谢谢", emoji: "🎂", type: "birthday" },
+            "9-9": { title: "昭君's Birthday", desc: "双猫齐全，幸福满满", emoji: "🎂", type: "birthday" },
+            "9-25": { title: "💰's Birthday", desc: "DogRich, Don'tForget", emoji: "🎂", type: "birthday" },
+            "9-28": { title: "🐮's Birthday", desc: "身体健康，遇到那个ta", emoji: "🎂", type: "birthday" },
             "10-14": { title: "OA's Birthday", desc: "少焦虑，多睡觉", emoji: "🎂", type: "birthday" },
             "11-25": { title: "Christmas Party", desc: "Secret Santa at Timo's house.", emoji: "🎄", type: "holiday" }
         };
