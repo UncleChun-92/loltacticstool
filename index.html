@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="app-version" content="1.0.2">
+    <meta name="app-version" content="1.0.3">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -137,7 +137,7 @@
     </div>
 
     <!-- MUSIC PLAYER: FLOATING BUTTON (Minimized) -->
-    <div id="music-fab" class="absolute top-8 right-6 z-30 transition-transform duration-300 hover:scale-110 hidden opacity-0 cursor-pointer">
+    <div id="music-fab" class="absolute top-20 right-6 z-30 transition-transform duration-300 hover:scale-110 hidden opacity-0 cursor-pointer">
         <div class="glass w-14 h-14 rounded-full flex items-center justify-center relative">
             <div id="fab-spin" class="absolute inset-1 rounded-full border-2 border-white/30 border-t-purple-400 spin-slow paused-spin"></div>
             <i class="fa-solid fa-music text-xl"></i>
@@ -251,7 +251,7 @@
 
     <script>
         // --- 0. 版本管理和无感自动更新检测 ---
-        const APP_VERSION = '1.0.2'; // 每次更新时修改这个版本号
+        const APP_VERSION = '1.0.3'; // 每次更新时修改这个版本号
         
         // 检查是否是刷新后的页面（避免无限循环）
         const isReloaded = sessionStorage.getItem('app-reloading') === 'true';
@@ -410,18 +410,48 @@
                 `
             },
             {
-                title: "Friendship Days",
-                artist: "Our Group",
-                url: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3",
+                title: "One more time",
+                artist: "PUPU COSMIC OBSERVATION TEAM",
+                url: "https://loltacticstool.online/pupu-One more time.mp3",
                 lyrics: `
-[00:00.00]Instrumental Intro...
-[00:05.00]Remember when we first met?
-[00:09.00]Walking down that street...
-[00:13.00]Laughing at everything.
-[00:18.00]Time flies so fast.
-[00:22.00]But we are still here.
-[00:26.00]Best friends forever.
-[00:30.00](Music playing...)
+[00:00.00]Yeah~ Let's go! 
+[00:05.50]Pupu Universe Observation Squad
+[00:07.80]精神文明 Committee in the house!
+[00:10.00]밤하늘 별빛 아래 우리 만나
+[00:14.00]모든 걱정은 bye bye, just feel the beat
+[00:18.80]噗噗宇宙观察队, we're shining so bright
+[00:23.00]精神文明建设, making everything right
+[00:27.00]One more time, let's make it count
+[00:30.00]Hands up high, no doubt
+[00:31.80]This moment here and now
+[00:34.00]We're the stars, take a bow
+[00:36.00]Pupu Universe Observation Squad! (One more time!)
+[00:40.00]We're the best, that's a fact (嘿!)
+[00:43.00]精神文明 Committee, that's where it's at
+[00:45.00]Let's party all night, no looking back
+[00:54.00]함께하는 순간 모두 특별해 
+[00:58.00]噗噗宇宙 속 우리 이야기 (Our story in the Pupu Universe)
+[01:02.30]웃음소리 터져 나와 (Laughter explodes out)
+[01:08.70]이 밤을 기억해
+[01:10.30]One more time, let's make it count
+[01:12.70]Hands up high, no doubt
+[01:15.20]This moment here and now
+[01:17.00]We're the stars, take a bow
+[01:19.30]Pupu Universe Observation Squad! (One more time!)
+[01:23.60]We're the best, that's a fact (嘿!)
+[01:26.00]精神文明 Committee, that's where it's at
+[01:28.00]Let's party all night, no looking back
+[01:36.80]From the east to the west, 我们是最棒的
+[01:39.00]精神文明的光芒, shining so bright
+[01:41.00]噗噗宇宙的旅程, 永远不会停
+[01:43.00]Together forever, day and night
+[01:48.00]Pupu Universe Observation Squad! (One more time!)
+[01:52.00]We're the best, that's a fact (嘿!)
+[01:54.50]精神文明 Committee, that's where it's at
+[01:56.90]Let's party all night, no looking back
+[02:05.00]Pupu Universe... Observation Squad!
+[02:10.00]精神文明... Committee!
+[02:12.00]We did it again! Yeah!
                 `
             }
         ];
@@ -895,8 +925,10 @@
         let currentDate = new Date();
         let currentSelectedDate = null;
 
-        // Initialization
-        loadSong(0); // Load first song
+        // Initialization - 随机播放一首歌
+        const randomIndex = Math.floor(Math.random() * playlist.length);
+        currentSongIndex = randomIndex;
+        loadSong(randomIndex);
 
         enterBtn.addEventListener('click', () => {
             playMusic(); // Start the playlist
