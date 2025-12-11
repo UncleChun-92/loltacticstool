@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="app-version" content="1.0.1">
+    <meta name="app-version" content="1.0.2">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -251,18 +251,39 @@
 
     <script>
         // --- 0. 版本管理和无感自动更新检测 ---
-        const APP_VERSION = '1.0.1'; // 每次更新时修改这个版本号
+        const APP_VERSION = '1.0.2'; // 每次更新时修改这个版本号
+        
+        // 检查是否是刷新后的页面（避免无限循环）
+        const isReloaded = sessionStorage.getItem('app-reloading') === 'true';
+        if (isReloaded) {
+            // 清除刷新标志
+            sessionStorage.removeItem('app-reloading');
+            // 刷新后的页面不再检查更新，避免循环
+            console.log('页面已刷新，跳过更新检查');
+        }
         
         // 检查更新函数（只在页面加载时执行一次）
         async function checkForUpdate() {
+            // 如果已经刷新过，不再检查
+            if (sessionStorage.getItem('app-reloading') === 'true') {
+                return false;
+            }
+            
             try {
                 const currentVersion = APP_VERSION;
                 
-                // 从服务器获取最新版本号
-                const htmlResponse = await fetch(window.location.href + '?v=' + Date.now(), {
-                    cache: 'no-cache',
+                // 检查 localStorage 中存储的版本号
+                const storedVersion = localStorage.getItem('app-version');
+                if (storedVersion === currentVersion) {
+                    // 版本号已匹配，不需要检查
+                    return false;
+                }
+                
+                // 从服务器获取最新版本号（绕过 Service Worker 缓存）
+                const htmlResponse = await fetch(window.location.href + '?v=' + Date.now() + '&nocache=' + Math.random(), {
+                    cache: 'no-store',
                     headers: {
-                        'Cache-Control': 'no-cache',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
                         'Pragma': 'no-cache'
                     }
                 });
@@ -272,23 +293,19 @@
                 
                 if (versionMatch && versionMatch[1] !== currentVersion) {
                     // 发现新版本，自动刷新（无感更新）
-                    console.log('发现新版本，自动刷新:', versionMatch[1]);
-                    location.reload(true);
+                    console.log('发现新版本，自动刷新:', versionMatch[1], '当前版本:', currentVersion);
+                    // 设置刷新标志
+                    sessionStorage.setItem('app-reloading', 'true');
+                    // 存储新版本号
+                    localStorage.setItem('app-version', versionMatch[1]);
+                    // 延迟一下再刷新，确保标志已设置
+                    setTimeout(() => {
+                        location.reload(true);
+                    }, 100);
                     return true;
-                }
-                
-                // 备用方案：检查文件修改时间
-                const lastModified = htmlResponse.headers.get('Last-Modified');
-                const storedLastModified = localStorage.getItem('app-last-modified');
-                
-                if (lastModified && lastModified !== storedLastModified && storedLastModified) {
-                    // 文件已更新，自动刷新
-                    console.log('检测到文件更新，自动刷新');
-                    localStorage.setItem('app-last-modified', lastModified);
-                    location.reload(true);
-                    return true;
-                } else if (lastModified) {
-                    localStorage.setItem('app-last-modified', lastModified);
+                } else if (versionMatch && versionMatch[1] === currentVersion) {
+                    // 版本号匹配，更新 localStorage
+                    localStorage.setItem('app-version', currentVersion);
                 }
                 
             } catch (error) {
@@ -298,13 +315,15 @@
             return false;
         }
         
-        // 页面加载完成后立即检查更新（只检查一次）
-        window.addEventListener('load', () => {
-            // 延迟检查，避免影响页面初始加载
-            setTimeout(() => {
-                checkForUpdate();
-            }, 2000);
-        });
+        // 页面加载完成后立即检查更新（只检查一次，且只在非刷新页面检查）
+        if (!isReloaded) {
+            window.addEventListener('load', () => {
+                // 延迟检查，避免影响页面初始加载
+                setTimeout(() => {
+                    checkForUpdate();
+                }, 2000);
+            });
+        }
         
         // --- 0. SERVICE WORKER 注册（缓存策略）---
         if ('serviceWorker' in navigator) {
