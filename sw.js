@@ -11,7 +11,6 @@ const CACHE_FILES = [
     './js/tailwindcss.js',
     './js/confrtti_browser.js',
     './img/shu.png',
-    './img/friends.jpg',
     './webfonts/fa-solid-900.woff2',
     './webfonts/fa-solid-900.ttf'
 ];
@@ -163,4 +162,5 @@ self.addEventListener('message', (event) => {
         });
     }
 });
+
 
